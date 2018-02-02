@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, redirect, session, flash
 from mysqlconnection import MySQLConnector
+from datetime import datetime
 
 app = Flask(__name__)
 app.secret_key = 'flaskRegistrationValidation'
@@ -13,7 +14,8 @@ PASSWORD_REGEX = re.compile(r'^[A-Z].*\d|\d.*[A-Z]')
 DOB_REGEX = re.compile(r'19|20[0-9]{2}-[0-9]{2}-[0-9]{2}')
 # A-Z, any char with 0 or more, digit  or  digit, any char with 0 or more, A-Z
 
-from datetime import datetime
+import os, binascii, md5 # include this at the top of your file
+salt = binascii.b2a_hex(os.urandom(15))
 
 ####################
 @app.route('/')
@@ -113,19 +115,21 @@ def registration():
       return redirect('/')
 #insert database
     print "** insert **"
+    hashed_pw = md5.new(password1 + salt).hexdigest()
     query = "INSERT INTO users (`first_name`, `last_name`, `email_address`, `password`, `dob`, `created_at`, `updated_at`) VALUES (:first, :second, :third, :forth, :fifth, now(), now())"
     data = {
              'first': firstname,
              'second': lastname,
              'third': email,
-             'forth': password1,
+            #  'forth': password1,
+             'forth': hashed_pw,
              'fifth': str(dob)
            }
     x2 = mysql.query_db(query, data)
     print x2
     if len(str(x2)) > 0:
       flash('Thanks for submitting your information.','pass')
-      flash(str('('+email+') ('+firstname+') ('+lastname+') ('+password1+')  ('+password2+') ('+dob+')'),'pass')
+      flash(str('('+email+') ('+firstname+') ('+lastname+') ('+password1+')  ('+hashed_pw+') ('+dob+')'),'pass')
       session["user_id"] = x2
       return redirect("/dashboard")
     else:
@@ -157,7 +161,7 @@ def login():
     query = "SELECT * FROM users WHERE email_address = :first and password = :second"
     data = {
              'first': email,
-             'second': password
+             'second': md5.new(password + salt).hexdigest()
            }
     x3 = mysql.query_db(query, data)
     print x3
