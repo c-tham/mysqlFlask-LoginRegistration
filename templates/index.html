@@ -4,26 +4,52 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>Flask - Registration Form</title>
+    <title>MySQL_Flask - Login and Registration Form</title>
     <!-- <link rel="stylesheet" href="styles.css"> -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
 </head>
 <body>
     <div id="container">
-        <div id="registration">
-            <form action="/" method="post">
-                <h1>Registration Form</h1>
+        <div id="messages">
                 <div class="row">
-                    {% with messages = get_flashed_messages(with_categories=true) %}
-                        {% if messages %}
-                            <div class=flashes>
-                                {% for category, message in messages %}
-                                    <p class="{{ category }}">{{ message }}</li>
-                                {% endfor %}
-                            </div >
-                        {% endif %}
-                    {% endwith %}
+                        {% with messages = get_flashed_messages(with_categories=true) %}
+                            {% if messages %}
+                                <div class=flashes>
+                                    {% for category, message in messages %}
+                                        <p class="{{ category }}">{{ message }}</li>
+                                    {% endfor %}
+                                </div >
+                            {% endif %}
+                        {% endwith %}
+                    </div>
+        </div>
+        <div id="login">
+            <form action="/login" method="post">
+                <h1>Login Form</h1>
+                <div class="row">
+                    <div class="col-left">
+                        Your Email:
+                    </div>
+                    <div class="col-right">
+                        <input type='text' name='email'>
+                    </div>
                 </div>
+                <div class="row">
+                    <div class="col-left">
+                        Your Password:
+                    </div>
+                    <div class="col-right">
+                        <input type='text' name='password'>
+                    </div>
+                </div>
+                <div class="row">
+                    <input type="submit" value="Log In">
+                </div>
+            </form>
+        </div>
+        <div id="registration">
+            <form action="/registration" method="post">
+                <h1>Registration Form</h1>
                 <div class="row">
                     <div class="col-left">
                         Your Email:
@@ -73,7 +99,7 @@
                     </div>
                 </div>
                 <div class="row">
-                    <input type="submit" value="Submit">
+                    <input type="submit" value="Create Account">
                 </div>
             </form>
         </div>

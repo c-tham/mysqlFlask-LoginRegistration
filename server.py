@@ -1,7 +1,9 @@
 from flask import Flask, render_template, request, redirect, session, flash
+from mysqlconnection import MySQLConnector
 
 app = Flask(__name__)
 app.secret_key = 'flaskRegistrationValidation'
+mysql = MySQLConnector(app,'0loginregistration')
 
 import re
 # create a regular expression object that we can use run operations on
@@ -13,13 +15,16 @@ DOB_REGEX = re.compile(r'19|20[0-9]{2}-[0-9]{2}-[0-9]{2}')
 
 from datetime import datetime
 
+####################
 @app.route('/')
 def index():
+  print "** index **"
   return render_template('index.html')
 
-@app.route('/',methods=['POST'])
-def process():
-  print "** Got Post Info **"
+####################
+@app.route('/registration',methods=['POST'])
+def registration():
+  print "** registration **"
   error = False
   today = str(datetime.now())[:10]
   print 'today is '+today
@@ -93,8 +98,99 @@ def process():
     error = True
 #others
   if error == False:
-    flash('Thanks for submitting your information.','pass')
-    flash(str('('+email+') ('+firstname+') ('+lastname+') ('+password1+')  ('+password2+') ('+dob+')'),'pass')
+# check duplicate email address
+    print "** check duplicate email **"
+    query = "SELECT * FROM users WHERE email_address = :first"
+    data = {
+             'first': email
+           }
+    x1 = mysql.query_db(query, data)
+    print x1
+    if len(x1) > 0:
+      flash('** Your email address ('+email+') is already registrated **','error_hacker')
+      flash('** Please enter a different email address **','error_hacker')
+      error = True
+      return redirect('/')
+#insert database
+    print "** insert **"
+    query = "INSERT INTO users (`first_name`, `last_name`, `email_address`, `password`, `dob`, `created_at`, `updated_at`) VALUES (:first, :second, :third, :forth, :fifth, now(), now())"
+    data = {
+             'first': firstname,
+             'second': lastname,
+             'third': email,
+             'forth': password1,
+             'fifth': str(dob)
+           }
+    x2 = mysql.query_db(query, data)
+    print x2
+    if len(str(x2)) > 0:
+      flash('Thanks for submitting your information.','pass')
+      flash(str('('+email+') ('+firstname+') ('+lastname+') ('+password1+')  ('+password2+') ('+dob+')'),'pass')
+      session["user_id"] = x2
+      return redirect("/dashboard")
+    else:
+      flash('** System Error. Uunable to insert record **','error_hacker')
   return redirect('/')
 
+####################
+@app.route('/login',methods=['POST'])
+def login():
+  print "** login **"
+  error = False
+  email = request.form['email']
+  password = request.form['password']
+#email
+  if len(email) < 1:
+    flash('** Your Email cannot be empty! **','error_empty')
+    error = True
+  elif not EMAIL_REGEX.match(email):
+    flash("** Invalid Email Address! **",'error_invalid')
+    error = True
+#password
+  if len(password) < 1:
+    flash('** Your Password cannot be empty! **','error_empty')
+    error = True 
+#others
+  if error == False:
+# check duplicate email address
+    print "** velifying **"
+    query = "SELECT * FROM users WHERE email_address = :first and password = :second"
+    data = {
+             'first': email,
+             'second': password
+           }
+    x3 = mysql.query_db(query, data)
+    print x3
+    if len(x3) == 0:
+      flash('** Your email address or/and password are incorrected **','error_hacker')
+      error = True
+    else:
+      flash('Thanks for submitting your information.','pass')
+      session["user_id"] = x3[0]["id"]
+      print session["user_id"]
+      return redirect("/dashboard")
+  return redirect('/')
+
+####################
+@app.route("/dashboard")
+def dashboard():
+  print "** dashboard **"
+  print session["user_id"]
+  # return render_template("dashboard.html")
+  query = "SELECT * FROM users WHERE id = :first"
+  data = {
+          "first": session["user_id"]
+        }
+  x4 = mysql.query_db(query, data) #list of dictionaries
+  print x4
+  return render_template("dashboard.html", user = x4[0])
+
+####################
+@app.route("/logout")
+def logout():
+  print "** logout **"
+  session.clear()
+  return redirect("/")
+
+####################
 app.run(debug=True)
